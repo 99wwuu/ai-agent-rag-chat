@@ -1,0 +1,25 @@
+# ===== Python 缓存 =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ===== IDE 配置 =====
+.idea/
+.vscode/
+
+# ===== 运行产物（不入库）=====
+temp/
+data/
+db_server/data/
+knowledgebases/*.faiss/
+
+# ===== 本地模型文件（体积大，不入库）=====
+models/
+
+# ===== 废弃的实验副本目录 =====
+04课上源码/
+
+# ===== 环境变量文件（含密钥，绝不入库）=====
+.env
