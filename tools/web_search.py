@@ -1,4 +1,5 @@
 # 网络搜索API工具类
+import os
 import requests
 from pydantic import Field
 from configs.setting import TIME_OUT
@@ -39,4 +40,5 @@ class WebSearch:
             return f"无法获取{query}的信息"
 
 
-web_search = WebSearch("0c38eac10d9b5c03b6007ece56f6c84372cdf86358e5c780fc4b87ae471ff582")
+# API Key 从环境变量读取，避免明文泄露
+web_search = WebSearch(os.getenv("SERPAPI_API_KEY", ""))
