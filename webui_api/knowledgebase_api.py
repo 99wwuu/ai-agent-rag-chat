@@ -1,10 +1,12 @@
 import json
+import os
 
 import requests
 import gradio as gr
 import pandas as pd
 
-base_url = "http://127.0.0.1:6605"
+# 后端地址可通过环境变量配置（同 chat_with_agent_api.py）
+base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:6605")
 
 
 def create_kb(kb_name, kb_info):
@@ -75,14 +77,18 @@ def list_kbs():
     # 定义API的URL
     list_kbs_url = base_url + "/knowledgebase/list_kbs"  # 请确保端口和路径正确
 
-    # 发送GET请求
-    response = requests.get(list_kbs_url)
+    try:
+        # 发送GET请求
+        response = requests.get(list_kbs_url)
 
-    # 检查响应状态码并打印结果
-    if response.status_code == 200:
-        kb_list = response.json()  # 解析JSON格式的知识库列表
-        return gr.update(choices=[kb.split(".")[0] for kb in kb_list["knowledgebases"]])
-    else:
+        # 检查响应状态码并打印结果
+        if response.status_code == 200:
+            kb_list = response.json()  # 解析JSON格式的知识库列表
+            return gr.update(choices=[kb.split(".")[0] for kb in kb_list["knowledgebases"]])
+        else:
+            return gr.update(choices=[])
+    except Exception:
+        # 后端还没启动 / 部署环境首次加载时，返回空列表而不是让整个页面报错
         return gr.update(choices=[])
 
 

@@ -1,0 +1,22 @@
+[
+  {"id": 1,  "question": "黑熊精自称什么名号？",       "keywords": ["黑风大王"], "type": "关键词匹配"},
+  {"id": 2,  "question": "金池长老原本是谁？",        "keywords": ["小和尚"], "type": "人物溯源"},
+  {"id": 3,  "question": "凌虚子手下有个小狼妖想修佛，法名叫什么？", "keywords": ["广谋"], "type": "人物关系"},
+  {"id": 4,  "question": "白衣秀士管着什么妖怪？",    "keywords": ["蛇"], "type": "组织归属"},
+  {"id": 5,  "question": "白衣秀士派到观音禅院的蛇精法名叫什么？", "keywords": ["广智"], "type": "人物关系"},
+  {"id": 6,  "question": "谁提出了放火烧观音禅院的主意？", "keywords": ["广智"], "type": "事件细节"},
+  {"id": 7,  "question": "金池长老最后怎么死的？",    "keywords": ["撞墙"], "type": "事件结局"},
+  {"id": 8,  "question": "黑熊精偷走了谁的袈裟？",    "keywords": ["唐僧"], "type": "物品归属"},
+  {"id": 9,  "question": "黑熊精最后被谁收走了？",    "keywords": ["观音"], "type": "人物结局"},
+  {"id": 10, "question": "凌虚子和白衣秀士最后被谁打死了？", "keywords": ["取经"], "type": "事件结局"},
+  {"id": 11, "question": "黑熊精当了什么神？",        "keywords": ["守山大神"], "type": "人物结局"},
+  {"id": 12, "question": "红孩儿的另一个名字叫什么？",  "keywords": ["善财童子"], "type": "别名"},
+  {"id": 13, "question": "孙悟空死后黑熊精得到了什么？", "keywords": ["六根"], "type": "物品归属"},
+  {"id": 14, "question": "黑熊精把悟空的遗物供奉在哪里？", "keywords": ["塔顶"], "type": "地点"},
+  {"id": 15, "question": "黑熊精用什么法术复活凌虚子？", "keywords": ["南海"], "type": "事件细节"},
+  {"id": 16, "question": "凌虚子复活后因为什么上吊了？",  "keywords": ["吸血"], "type": "事件细节"},
+  {"id": 17, "question": "灵虚子是从哪里跑过来的？",    "keywords": ["狮驼国"], "type": "人物来源"},
+  {"id": 18, "question": "金池长老复活到了什么东西上？",  "keywords": ["财物"], "type": "事件细节"},
+  {"id": 19, "question": "老道士临走时掉下了一片什么？",  "keywords": ["菩提叶"], "type": "细节"},
+  {"id": 20, "question": "土地从老道士那里学到了什么技能？", "keywords": ["定身法", "聚形散气"], "type": "技能"}
+]

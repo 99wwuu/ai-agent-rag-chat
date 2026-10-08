@@ -1,9 +1,15 @@
 # 定义后台 API 的 URL
 import json
+import os
 import requests
 
-chat_with_agent_url = "http://127.0.0.1:6605/chat/agent_chat"
-chat_url = "http://127.0.0.1:6605/chat/chat"
+# 后端地址可通过环境变量 API_BASE_URL 配置：
+# - 本地前后端分开启动（app_server.py + webui.py）：默认 http://127.0.0.1:6605
+# - 单进程部署（python app.py）：由 app.py 自动指向当前服务端口
+base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:6605")
+
+chat_with_agent_url = base_url + "/chat/agent_chat"
+chat_url = base_url + "/chat/chat"
 
 
 def chat_with_agent(prompt, history, sys_prompt, history_len, temperature, max_tokens, stream, session_id):

@@ -8,6 +8,7 @@ venv/
 # ===== IDE 配置 =====
 .idea/
 .vscode/
+.trae/
 
 # ===== 运行产物（不入库）=====
 temp/

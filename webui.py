@@ -6,8 +6,8 @@ os.environ.setdefault("NO_PROXY", "localhost,127.0.0.1")
 os.environ.setdefault("no_proxy", "localhost,127.0.0.1")
 
 import gradio as gr
-from webui.chat_with_agent_api import chat_with_agent
-from webui.knowledgebase_api import create_kb, delete_kb, upload_docs, list_kbs, update
+from webui_api.chat_with_agent_api import chat_with_agent
+from webui_api.knowledgebase_api import create_kb, delete_kb, upload_docs, list_kbs, update
 
 
 # 定义一个生成唯一会话 ID 的函数
@@ -68,7 +68,13 @@ with gr.Blocks(fill_width=True, fill_height=True) as demo:
             create_button = gr.Button("创建知识库")
             delete_button = gr.Button("删除知识库")
 
-        kbs = list_kbs()['choices']
+        kbs = []
+        try:
+            # 页面模块加载时后端可能还没启动（单进程部署场景），失败则先给空列表，
+            # 页面打开后会通过 demo.load 自动刷新一次
+            kbs = list_kbs()['choices']
+        except Exception:
+            pass
         with gr.Row():
             kb_name_upload = gr.Dropdown(label="选择知识库", choices=kbs)
         with gr.Row():
@@ -94,6 +100,11 @@ with gr.Blocks(fill_width=True, fill_height=True) as demo:
         upload_button.click(upload_docs, [kb_name_upload, file_uploaded, chunk_size, chunk_overlap],
                             [upload_message_box, file_uploaded])
 
-# 启动应用
-demo.launch()
+        # 页面打开时自动刷新一次知识库下拉列表（单进程部署时服务已就绪，能正确加载列表）
+        demo.load(fn=list_kbs, outputs=kb_name_upload)
+
+
+# 本地前后端分开启动时的入口；部署时由 app.py 挂载 demo，不走这里
+if __name__ == "__main__":
+    demo.launch()
 #demo.launch(server_name="0.0.0.0", share=False)

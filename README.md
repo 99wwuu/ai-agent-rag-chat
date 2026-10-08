@@ -44,9 +44,11 @@ LangChain ReAct Agent（Qwen2.5 + 工具集）
 
 ## 快速开始
 
+### 方式一：本地开发（前后端分离启动）
+
 ```bash
 # 1. 安装依赖
-pip install fastapi uvicorn langchain langchain-openai langchain-community faiss-cpu sqlalchemy jieba gradio requests
+pip install -r requirements.txt
 
 # 2. 配置 API Key（硅基流动），设置环境变量
 #    Windows PowerShell:
@@ -58,6 +60,41 @@ python app_server.py
 
 # 4. 启动前端页面
 python webui.py
+```
+
+### 方式二：单进程启动（一键运行 / 部署用）
+
+后端接口与 Gradio 页面合并在一个进程、一个端口，无需开两个终端：
+
+```bash
+pip install -r requirements.txt
+setx SILICONFLOW_API_KEY "你的API Key"
+python app.py
+# 页面与接口都在：http://127.0.0.1:7860 （接口文档 /docs）
+```
+
+## 在线 Demo 部署（ModelScope 创空间，免费）
+
+1. 注册并登录 [modelscope.cn](https://www.modelscope.cn)，完成实名认证；进入「我的创空间」→「创建创空间」，SDK 选择 **Gradio**，空间可见性选「公开」。
+2. 按页面提示克隆创空间 Git 仓库，把本项目全部文件复制进去（保证 `app.py` 在仓库根目录），提交推送：
+
+   ```bash
+   git add .
+   git commit -m "deploy: ModelScope 创空间在线 Demo"
+   git push
+   ```
+
+3. 在创空间「设置 → 环境变量」中添加密钥：`SILICONFLOW_API_KEY` = 你的硅基流动 Key（选 Secret 类型，不会公开）。
+4. push 后平台自动构建部署，等待几分钟即可获得公开访问链接：`https://www.modelscope.cn/studios/<你的用户名>/<空间名>`，任何人点开都能直接试用。
+
+> 说明：`app.py` 为部署入口，通过 `gr.mount_gradio_app` 把 Gradio 页面挂载到 FastAPI 根路径，单进程同时提供页面与 `/chat`、`/knowledgebase` 接口；端口自动读取平台的 `PORT` 环境变量（本地默认 7860）。免费 CPU 实例的磁盘是临时的，重启后上传的知识库会清空，仅用于演示。
+
+## 量化评测
+
+`eval/` 目录包含检索与生成性能的量化评测脚本（简历中 90% Top-3 命中率的原始证据）：
+
+```bash
+python eval/run_eval.py        # 跑 20 题对比 FAISS / BM25 / 混合检索，结果写入 eval/report.json
 ```
 
 ## 核心流程
