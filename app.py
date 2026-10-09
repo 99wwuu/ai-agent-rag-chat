@@ -56,6 +56,43 @@ app.include_router(chat_router)
 app.include_router(kb_router)
 
 
+# ============ 兼容部署平台的 /info 接口 ============
+# 魔搭创空间网关代理会把 gradio 内置的 /info（含 /gradio_api/info）拦截并返回 500，
+# 前端拿不到 API 清单会弹 "No API found"。在挂载 gradio 之前注册自有路由（优先级更高），
+# 直接返回 demo 的 API 清单；即使失败也返回空结构，绝不让它 500。
+from fastapi.responses import JSONResponse
+
+
+def _api_info_payload():
+    try:
+        info = demo.get_api_info()
+        if info:
+            return info
+    except Exception as _e:
+        print("[deploy] build api_info failed:", _e)
+    return {"named_endpoints": {}, "unnamed_endpoints": {}}
+
+
+@app.get("/info")
+async def _info_get():
+    return JSONResponse(_api_info_payload())
+
+
+@app.post("/info")
+async def _info_post():
+    return JSONResponse(_api_info_payload())
+
+
+@app.get("/gradio_api/info")
+async def _gradio_api_info_get():
+    return JSONResponse(_api_info_payload())
+
+
+@app.post("/gradio_api/info")
+async def _gradio_api_info_post():
+    return JSONResponse(_api_info_payload())
+
+
 # ============ 修复 Gradio 异步原语为 None 的问题（Python 3.12 + mount_gradio_app） ============
 # 现象：发消息报 TypeError: NoneType does not support the asynchronous context manager
 # protocol；页面加载卡“加载中”，SSE 流报 'NoneType' object has no attribute 'wait'。
