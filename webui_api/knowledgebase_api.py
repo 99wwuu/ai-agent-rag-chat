@@ -84,7 +84,7 @@ def list_kbs():
         # 检查响应状态码并打印结果
         if response.status_code == 200:
             kb_list = response.json()  # 解析JSON格式的知识库列表
-            return gr.update(choices=[kb.split(".")[0] for kb in kb_list["knowledgebases"]])
+            return gr.update(choices=[name for kb in kb_list["knowledgebases"] if (name := kb.split(".")[0])])
         else:
             return gr.update(choices=[])
     except Exception:
