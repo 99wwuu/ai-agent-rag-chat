@@ -55,6 +55,29 @@ app.add_middleware(
 app.include_router(chat_router)
 app.include_router(kb_router)
 
+
+# ============ 修复 Gradio 队列锁为 None 的问题（Python 3.12 + mount_gradio_app） ============
+# 现象：发消息时报 TypeError: 'NoneType' object does not support the asynchronous
+# context manager protocol（queueing.py 的 async with self.pending_message_lock）。
+# 原因：demo 的 Queue 在 import 阶段创建，那时主线程还没有 event loop，
+# gradio 的 safe_get_lock() 捕获 RuntimeError 后直接返回 None；
+# 正常 demo.launch() 会在 loop 内重建锁，而 mount_gradio_app 挂载方式不会，需手动补。
+# startup 钩子在 uvicorn 已运行的事件循环内执行，此时创建的 Lock 绑定的是正确的 loop。
+@app.on_event("startup")
+async def _fix_gradio_queue_locks():
+    try:
+        import asyncio as _asyncio
+
+        q = getattr(demo, "_queue", None)
+        if q is not None:
+            if getattr(q, "pending_message_lock", None) is None:
+                q.pending_message_lock = _asyncio.Lock()
+            if getattr(q, "delete_lock", None) is None:
+                q.delete_lock = _asyncio.Lock()
+            print("[deploy] gradio queue locks fixed OK")
+    except Exception as _e:
+        print("[deploy] queue lock fix skipped:", _e)
+
 # ============ API 信息注入（部署兼容性修复） ============
 # 平台代理层会拦截 gradio 内置的 GET /info，前端拿不到 API 清单会报 "No API found"。
 # gradio 客户端逻辑：window.gradio_api_info 存在时直接使用、跳过 /info 请求。
