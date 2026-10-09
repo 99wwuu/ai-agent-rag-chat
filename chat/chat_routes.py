@@ -73,57 +73,59 @@ async def agent_chat(
         histories += f"{role}:{content}\n\n"
 
     async def agent_chat_iterator() -> AsyncIterable[str]:
-        # 使用自己定义的回调处理函数
-        callback = CustomAsyncIteratorCallbackHandler()
-        callbacks = [callback]
-
-        # 定义聊天模型
-        chat_model = ChatOpenAI(
-            model=chat_model_name,
-            api_key=api_key,
-            base_url=base_url,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            streaming=True,
-            callbacks=callbacks
-        )
-
-        # 定义系统提示，用于设置行为规则
-        system_prompt = SystemMessagePromptTemplate.from_template(
-            sys_prompt
-        )
-
-        # 定义人类提示，用于用户输入
-        human_prompt = HumanMessagePromptTemplate.from_template(
-            PROMPT_TEMPLATES["agent"]
-        )
-        # 组装成完整的 ChatPromptTemplate
-        chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
-
-        # 创建代理
-        agent = create_react_agent(chat_model, tools, chat_prompt, stop_sequence=["\nObserv"])
-        agent_executor = AgentExecutor.from_agent_and_tools(
-            agent=agent,
-            tools=tools,
-            verbose=True,
-        )
-
-        # 列出所有的知识库
-        knowledgebases = list_kb_from_db(session)
-        # 整理成字符串
-        kbs = "".join([f"{kb['kb_name']} - {kb['kb_info']} \n" for kb in knowledgebases])
-        code_interpreter.output_files, code_interpreter.output_codes = "", ""
-        # 开启异步任务执行agent
-        task = asyncio.create_task(
-            agent_executor.acall(
-                inputs={"input": query, "history": histories, "knowledgebases": kbs, "documents": documents})
-        )
+        task = None
 
         def pack(data: dict) -> bytes:
             # 每条消息以换行分隔，方便前端按行解析，避免 JSON 粘包/拆包
             return (json.dumps(data, ensure_ascii=False) + "\n").encode("utf-8")
 
         try:
+            # 使用自己定义的回调处理函数
+            callback = CustomAsyncIteratorCallbackHandler()
+            callbacks = [callback]
+
+            # 定义聊天模型
+            chat_model = ChatOpenAI(
+                model=chat_model_name,
+                api_key=api_key,
+                base_url=base_url,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                streaming=True,
+                callbacks=callbacks
+            )
+
+            # 定义系统提示，用于设置行为规则
+            system_prompt = SystemMessagePromptTemplate.from_template(
+                sys_prompt
+            )
+
+            # 定义人类提示，用于用户输入
+            human_prompt = HumanMessagePromptTemplate.from_template(
+                PROMPT_TEMPLATES["agent"]
+            )
+            # 组装成完整的 ChatPromptTemplate
+            chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
+
+            # 创建代理
+            agent = create_react_agent(chat_model, tools, chat_prompt, stop_sequence=["\nObserv"])
+            agent_executor = AgentExecutor.from_agent_and_tools(
+                agent=agent,
+                tools=tools,
+                verbose=True,
+            )
+
+            # 列出所有的知识库
+            knowledgebases = list_kb_from_db(session)
+            # 整理成字符串
+            kbs = "".join([f"{kb['kb_name']} - {kb['kb_info']} \n" for kb in knowledgebases])
+            code_interpreter.output_files, code_interpreter.output_codes = "", ""
+            # 开启异步任务执行agent
+            task = asyncio.create_task(
+                agent_executor.acall(
+                    inputs={"input": query, "history": histories, "knowledgebases": kbs, "documents": documents})
+            )
+
             # 流式输出：队列token / done事件 / agent任务结束，三者竞速
             # 任务异常结束时也能立刻退出循环，不会一直挂起
             while True:
@@ -165,13 +167,14 @@ async def agent_chat(
                 yield pack({"answer": f'\n\n{output_codes}'})
 
         except asyncio.TimeoutError:
-            task.cancel()
+            if task is not None:
+                task.cancel()
             traceback.print_exc()
             yield pack({"answer": "\n\n[错误] 模型响应超时，请稍后重试或简化问题。"})
         except Exception as e:
             # 关键：任何异常都转成一条正常消息返回，保证 HTTP 流正常结束，
             # 前端不会再出现 ChunkedEncodingError: Response ended prematurely（响应提前结束）
-            if not task.done():
+            if task is not None and not task.done():
                 task.cancel()
             traceback.print_exc()
             yield pack({"answer": f"\n\n[服务端错误] {type(e).__name__}: {e}"})

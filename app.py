@@ -101,6 +101,19 @@ async def _gradio_api_info_post():
 # mount_gradio_app 在模块 import 阶段执行（uvicorn 的 loop 尚未创建），于是这些对象全是 None；
 # 正常 demo.launch() 在 loop 内构建所以无此问题。startup 钩子在已运行的事件循环内执行，
 # 此时创建的 Lock/Event 绑定正确的 loop，把 None 全部补齐。
+# ============ 确保云端新容器首次启动时数据库表已创建 ============
+# 本地开发时 SQLite 表早已存在；魔搭每次部署都是全新容器，不建表会查询失败报 500。
+@app.on_event("startup")
+async def _create_db_tables():
+    try:
+        from db_server.base import Base, engine
+
+        Base.metadata.create_all(engine)
+        print("[deploy] DB tables created OK")
+    except Exception as _e:
+        print("[deploy] DB create skipped:", _e)
+
+
 @app.on_event("startup")
 async def _fix_gradio_async_primitives():
     try:
