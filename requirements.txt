@@ -2,7 +2,7 @@
 fastapi==0.112.2
 uvicorn==0.20.0
 python-multipart==0.0.20
-gradio==4.44.1
+gradio==4.44.0
 
 # ===== LangChain 生态 =====
 langchain==0.3.7
