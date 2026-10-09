@@ -81,10 +81,13 @@ def list_kbs():
         # 发送GET请求
         response = requests.get(list_kbs_url)
 
-        # 检查响应状态码并打印结果
+        # 检查响应状态码并返回结果
         if response.status_code == 200:
             kb_list = response.json()  # 解析JSON格式的知识库列表
-            return gr.update(choices=[name for kb in kb_list["knowledgebases"] if (name := kb.split(".")[0])])
+            # 去掉空名称（如误建的 ".faiss" 目录），否则下拉框会出现非法空选项
+            return gr.update(
+                choices=[name for kb in kb_list["knowledgebases"] if (name := kb.split(".")[0])]
+            )
         else:
             return gr.update(choices=[])
     except Exception:

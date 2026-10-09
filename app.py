@@ -56,27 +56,40 @@ app.include_router(chat_router)
 app.include_router(kb_router)
 
 
-# ============ 修复 Gradio 队列锁为 None 的问题（Python 3.12 + mount_gradio_app） ============
-# 现象：发消息时报 TypeError: 'NoneType' object does not support the asynchronous
-# context manager protocol（queueing.py 的 async with self.pending_message_lock）。
-# 原因：demo 的 Queue 在 import 阶段创建，那时主线程还没有 event loop，
-# gradio 的 safe_get_lock() 捕获 RuntimeError 后直接返回 None；
-# 正常 demo.launch() 会在 loop 内重建锁，而 mount_gradio_app 挂载方式不会，需手动补。
-# startup 钩子在 uvicorn 已运行的事件循环内执行，此时创建的 Lock 绑定的是正确的 loop。
+# ============ 修复 Gradio 异步原语为 None 的问题（Python 3.12 + mount_gradio_app） ============
+# 现象：发消息报 TypeError: NoneType does not support the asynchronous context manager
+# protocol；页面加载卡“加载中”，SSE 流报 'NoneType' object has no attribute 'wait'。
+# 原因：gradio 的 Queue 锁和 App 的 lock/stop_event 通过 safe_get_lock()/
+# safe_get_stop_event() 创建，这两个函数在“当前线程没有 event loop”时直接返回 None。
+# mount_gradio_app 在模块 import 阶段执行（uvicorn 的 loop 尚未创建），于是这些对象全是 None；
+# 正常 demo.launch() 在 loop 内构建所以无此问题。startup 钩子在已运行的事件循环内执行，
+# 此时创建的 Lock/Event 绑定正确的 loop，把 None 全部补齐。
 @app.on_event("startup")
-async def _fix_gradio_queue_locks():
+async def _fix_gradio_async_primitives():
     try:
         import asyncio as _asyncio
+        from gradio.routes import App as _GradioApp
 
+        # 1) Queue 的两把锁
         q = getattr(demo, "_queue", None)
         if q is not None:
             if getattr(q, "pending_message_lock", None) is None:
                 q.pending_message_lock = _asyncio.Lock()
             if getattr(q, "delete_lock", None) is None:
                 q.delete_lock = _asyncio.Lock()
-            print("[deploy] gradio queue locks fixed OK")
+
+        # 2) 被挂载的 gradio App 实例的 lock / stop_event
+        for route in app.routes:
+            g_app = getattr(route, "app", None)
+            if isinstance(g_app, _GradioApp):
+                if getattr(g_app, "lock", None) is None:
+                    g_app.lock = _asyncio.Lock()
+                if getattr(g_app, "stop_event", None) is None:
+                    g_app.stop_event = _asyncio.Event()
+
+        print("[deploy] gradio async primitives fixed OK")
     except Exception as _e:
-        print("[deploy] queue lock fix skipped:", _e)
+        print("[deploy] async primitives fix skipped:", _e)
 
 # ============ API 信息注入（部署兼容性修复） ============
 # 平台代理层会拦截 gradio 内置的 GET /info，前端拿不到 API 清单会报 "No API found"。
